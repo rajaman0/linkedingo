@@ -9,6 +9,17 @@
 
     <include layout="@layout/content_camera" />
 
+    <xyz.chiragtoprani.linkedingo.DrawSurfaceView
+        android:id="@+id/drawSurfaceView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
 
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_map"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:src="@android:drawable/ic_dialog_map" />
 
 </android.support.design.widget.CoordinatorLayout>

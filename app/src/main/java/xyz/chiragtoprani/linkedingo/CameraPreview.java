@@ -6,6 +6,9 @@ package xyz.chiragtoprani.linkedingo;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -19,6 +22,17 @@ public class CameraPreview extends SurfaceView implements Callback {
     private static final String TAG = "Camera" ;
     private SurfaceHolder mHolder;
     private Camera mCamera;
+//    LocationManager locMgr;
+//
+//
+//    private final SensorEventListener mListener = new SensorEventListener() {
+//        public void onSensorChanged(SensorEvent event) {
+//            Log.d(TAG, "sensorChanged (" + event.values[0] + ", " + event.values[1] + ",
+//        }
+//
+//        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+//        }
+//    };
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
