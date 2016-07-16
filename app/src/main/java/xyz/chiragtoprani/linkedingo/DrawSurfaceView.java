@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.ImageReader;
+import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -16,9 +18,11 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -41,91 +45,104 @@ import java.util.ArrayList;
  */
 
 public class DrawSurfaceView extends View {
-	Point me = new Point(-33.870932d, 151.204727d, "Me");
-	Paint mPaint = new Paint();
-	private double OFFSET = 0d;
-	private double screenWidth, screenHeight = 0d;
-	private Bitmap[] mSpots, mBlips;
-	private Bitmap mRadar;
+    Point me = new Point(-33.870932d, 151.204727d, "Me");
+    Paint mPaint = new Paint();
+    private double OFFSET = 0d;
+    private double screenWidth, screenHeight = 0d;
+    private Bitmap[] mSpots, mBlips;
+    private Bitmap mRadar;
     private int count = 0;
     private boolean draw;
 
-	public static ArrayList<Point> props = new ArrayList<Point>();
-	static {
-		props.add(new Point(90d, 110.8000, "North Pole"));
-		props.add(new Point(-90d, -110.8000, "South Pole"));
-		props.add(new Point(-45d, 144.8000, "Prithvi"));
-		props.add(new Point(-33.870932d, 151.8000, "East"));
-		props.add(new Point(-33.870932d, 150.8000, "West"));
-	}
+    public static ArrayList<Point> props = new ArrayList<Point>();
 
-	public DrawSurfaceView(Context c, Paint paint) {
-		super(c);
-	}
+    static {
+        props.add(new Point(90d, 110.8000, "North Pole"));
+        props.add(new Point(-90d, -110.8000, "South Pole"));
+        props.add(new Point(-45d, 144.8000, "Prithvi"));
+        props.add(new Point(-33.870932d, 151.8000, "East"));
+        props.add(new Point(-33.870932d, 150.8000, "West"));
+    }
+
+    public DrawSurfaceView(Context c, Paint paint) {
+        super(c);
+    }
     // Retrieves an image specified by the URL, displays it in the UI.
 
 
-	public static Bitmap drawableToBitmap (Drawable drawable) {
-		Bitmap bitmap = null;
+    public static Bitmap drawableToBitmap(Drawable drawable) {
+        Bitmap bitmap = null;
 
-		if (drawable instanceof BitmapDrawable) {
-			BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-			if(bitmapDrawable.getBitmap() != null) {
-				return bitmapDrawable.getBitmap();
-			}
-		}
+        if (drawable instanceof BitmapDrawable) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            if (bitmapDrawable.getBitmap() != null) {
+                return bitmapDrawable.getBitmap();
+            }
+        }
 
-		if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
-			bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
-		} else {
-			bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-		}
+        if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+            bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+        } else {
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        }
 
-		Canvas canvas = new Canvas(bitmap);
-		drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-		drawable.draw(canvas);
-		return bitmap;
-	}
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
 
-	public DrawSurfaceView(Context context, AttributeSet set) {
-		super(context, set);
-		mPaint.setColor(Color.GREEN);
-		mPaint.setTextSize(50);
-		mPaint.setStrokeWidth(DpiUtils.getPxFromDpi(getContext(), 2));
-		mPaint.setAntiAlias(true);
-		
-		mRadar = BitmapFactory.decodeResource(context.getResources(), R.drawable.radar);
-		
-		mSpots = new Bitmap[props.size()];
-		for (int i = 0; i < mSpots.length; i++) 
-			mSpots[i] = BitmapFactory.decodeResource(context.getResources(), R.drawable.dot);
+    public DrawSurfaceView(Context context, AttributeSet set) {
+        super(context, set);
+        mPaint.setColor(Color.GREEN);
+        mPaint.setTextSize(50);
+        mPaint.setStrokeWidth(DpiUtils.getPxFromDpi(getContext(), 2));
+        mPaint.setAntiAlias(true);
 
-		mBlips = new Bitmap[props.size()];
-		for (int i = 0; i < mBlips.length; i++)
-		//	mBlips[i] = BitmapFactory.decodeResource(context.getResources(), R.drawable.blip);
-            new ImageRequest("http://a1.files.biography.com/image/upload/c_fill,cs_srgb,dpr_1.0,g_face,h_300,q_80,w_300/MTIwNjA4NjMzNzYwMjg2MjIw.jpg",
-                new Response.Listener<Bitmap>() {
-                    @Override
-                    public void onResponse(Bitmap blip) {
+        mRadar = BitmapFactory.decodeResource(context.getResources(), R.drawable.radar);
 
-                        mBlips[count ++] = blip;
-                        Log.v("Number", "count: + " + count);
-                        Log.v("Number", "length: + " + mBlips.length);
-                        if (count == mBlips.length) {
-                            count = 0;
-                            draw = true;
-                        }
-                    }
-                }, 0, 0, null,
-                new Response.ErrorListener() {
-                    public void onErrorResponse(VolleyError error) {
-                        Log.v("Number", "error");
-                    }
-                });
+        mSpots = new Bitmap[props.size()];
+        for (int i = 0; i < mSpots.length; i++)
+            mSpots[i] = BitmapFactory.decodeResource(context.getResources(), R.drawable.dot);
+
+        mBlips = new Bitmap[props.size()];
+        for (int i = 0; i < mBlips.length; i++) {
+            mBlips[i] = BitmapFactory.decodeResource(context.getResources(), R.drawable.blip);
+
+        }
+        String url = "http://a1.files.biography.com/image/upload/c_fill,cs_srgb,dpr_1.0,g_face,h_300,q_80,w_300/MTIwNjA4NjMzNzYwMjg2MjIw.jpg";
+        String [] arr = new String[mSpots.length];
+        for (int i = 0; i < arr.length; i ++)
+            arr[i] = url;
+
+        new DownloadFilesTask().execute(arr);
         Log.v("Number", "error with drawer");
     }
 
-	@Override
+    private class DownloadFilesTask extends AsyncTask<String[], Integer, Bitmap>{
+        protected Bitmap doInBackground(String[] ... urls) {
+            for (int i = 0; i < mSpots.length; i ++) {
+                try {
+                    URL url = new URL(urls[0][i]);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setDoInput(true);
+                    connection.connect();
+                    InputStream input = connection.getInputStream();
+                    Bitmap myBitmap = BitmapFactory.decodeStream(input);
+                    mSpots[i] = myBitmap;
+                    Log.v("Number", "finishing numbers");
+                    draw = true;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+            return null;
+        }
+    }
+
+
+        @Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
 		Log.d("onSizeChanged", "in here w=" + w + " h=" + h);
@@ -136,7 +153,6 @@ public class DrawSurfaceView extends View {
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-        if (!draw) return;
 		canvas.drawBitmap(mRadar, 0, 0, mPaint);
 
 		int radarCentreX = mRadar.getWidth() / 2;
